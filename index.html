@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Videojuego Futurista</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: linear-gradient(45deg, #4e54c8, #8f94fb);
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+    }
+    #gameCanvas {
+      display: block;
+      margin: auto;
+      border: 5px solid white;
+    }
+    .button {
+      padding: 10px 20px;
+      margin: 20px;
+      font-size: 20px;
+      background-color: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .button:hover {
+      background-color: rgba(255, 255, 255, 0.5);
+    }
+    .footer {
+      position: absolute;
+      bottom: 20px;
+      width: 100%;
+      text-align: center;
+      font-size: 14px;
+      color: white;
+      font-style: italic;
+    }
+    .footer .dynamic-box {
+      display: inline-block;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 5px;
+    }
+    .intro-text {
+      font-size: 25px;
+      color: white;
+      text-align: center;
+      margin-top: 150px;
+      font-weight: bold;
+      text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.5);
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+
+<div class="intro-text">
+  Este es un videojuego creado con cariño para la comunidad de programadores, que sirva de ejemplo para implementar cosas e inspiración.
+  <br>
+  Camilo Andrés Serrano Sánchez
+  <br>
+  WhatsApp: 320 941 5494
+  <br>
+  LinkedIn: <a href="https://www.linkedin.com/in/camilo-serrano-sanchez-/" target="_blank" style="color: #f0f0f0;">Camilo Serrano</a>
+</div>
+
+<div style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%);">
+  <button class="button" onclick="startGame()">Inicio del Juego</button>
+  <button class="button" onclick="restartGame()">Reiniciar</button>
+  <button class="button" onclick="goHome()">Volver al Inicio</button>
+</div>
+
+<div class="footer">
+  <div class="dynamic-box">
+    Todos los derechos reservados, desarrollado por Ingeniero Camilo Andrés Serrano Sánchez.
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  function startGame() {
+    alert('Iniciando el juego...');
+    // Lógica para comenzar el juego
+  }
+
+  function restartGame() {
+    alert('Reiniciando el juego...');
+    // Lógica para reiniciar el juego
+  }
+
+  function goHome() {
+    alert('Volviendo al inicio...');
+    // Lógica para regresar al inicio
+  }
+
+  // Sección para efectos visuales futuristas
+  function drawBackground() {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([5, 5]);
+    for (let i = 0; i < canvas.width; i += 30) {
+      ctx.beginPath();
+      ctx.moveTo(i, 0);
+      ctx.lineTo(i, canvas.height);
+      ctx.stroke();
+    }
+    for (let j = 0; j < canvas.height; j += 30) {
+      ctx.beginPath();
+      ctx.moveTo(0, j);
+      ctx.lineTo(canvas.width, j);
+      ctx.stroke();
+    }
+  }
+
+  // Dibujar fondo futurista y los elementos iniciales
+  function draw() {
+    drawBackground();
+    requestAnimationFrame(draw);
+  }
+
+  draw(); // Llamar al dibujado del fondo
+
+</script>
+</body>
+</html>
