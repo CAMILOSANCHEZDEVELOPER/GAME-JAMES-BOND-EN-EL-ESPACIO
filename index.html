@@ -1,285 +1,287 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>James Bond en el Espacio — Galáctico</title>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
-  <style>
-    :root{--bg1:#020212;--neon1:#00fff6;--neon2:#ff00b8;--accent:#7a4cff}
-    html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg1),#000018);font-family:'Orbitron',sans-serif;color:#e6f7ff}
-    canvas{display:block;width:100vw;height:100vh}
-    /* small accessibility hint */
-    .nojs{position:fixed;left:10px;top:10px;background:rgba(0,0,0,0.6);padding:8px;border-radius:8px}
-  </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>James Bond en el Espacio — Galáctico</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg1:#020212;--neon1:#00fff6;--neon2:#ff00b8;--accent:#7a4cff}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg1),#000018);font-family:'Orbitron',sans-serif;color:#e6f7ff}
+    canvas{display:block;width:100vw;height:100vh}
+    /* small accessibility hint */
+    .nojs{position:fixed;left:10px;top:10px;background:rgba(0,0,0,0.6);padding:8px;border-radius:8px}
+  </style>
 </head>
 <body>
 <noscript><div class="nojs">Este juego requiere JavaScript.</div></noscript>
 <canvas id="c"></canvas>
 <script>
 /* James Bond en el Espacio — Canvas completo
-   - Todo el menú (cajón), foto, datos y botones están DENTRO del canvas
-   - Partículas de fondo, enemigos con formas (asteroides y drones), nave jugable
-   - Click en botones dentro del canvas (Iniciar, Manual, Email, WhatsApp, LinkedIn)
-   - Avatar: intenta 'camilo.jpg' local, luego fallback remoto; si falla, dibuja placeholder
+   - Todo el menú (cajón), foto, datos y botones están DENTRO del canvas
+   - Partículas de fondo, enemigos con formas (asteroides y drones), nave jugable
+   - Click en botones dentro del canvas (Iniciar, Manual, Email, WhatsApp, LinkedIn)
+   - Avatar: intenta la URL de GitHub, luego fallback remoto; si falla, dibuja placeholder
 */
 (function(){
-  const canvas = document.getElementById('c');
-  const ctx = canvas.getContext('2d');
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
 
-  // --- HiDPI setup ---
-  function fit(){
-    const dpr = window.devicePixelRatio||1;
-    canvas.width = Math.floor(window.innerWidth * dpr);
-    canvas.height = Math.floor(window.innerHeight * dpr);
-    canvas.style.width = window.innerWidth + 'px';
-    canvas.style.height = window.innerHeight + 'px';
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-  }
-  window.addEventListener('resize', fit);
-  fit();
+  // --- HiDPI setup ---
+  function fit(){
+    const dpr = window.devicePixelRatio||1;
+    canvas.width = Math.floor(window.innerWidth * dpr);
+    canvas.height = Math.floor(window.innerHeight * dpr);
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  window.addEventListener('resize', fit);
+  fit();
 
-  let state = 'menu'; // menu | manual | game | gameover
-  let lastTime = performance.now();
+  let state = 'menu'; // menu | manual | game | gameover
+  let lastTime = performance.now();
 
-  // --- Avatar handling ---
-  const avatar = new Image();
-  let avatarLoaded = false, avatarBroken = false;
-  const remoteFallback = 'https://media.licdn.com/dms/image/v2/D4E35AQHlZPQIenYnZA/profile-framedphoto-shrink_400_400/0/1699487313381';
-  let triedFallback = false;
-  avatar.onload = ()=> { avatarLoaded = true; };
-  avatar.onerror = ()=>{ if(!triedFallback){ triedFallback = true; avatar.src = remoteFallback; } else { avatarBroken = true; } };
-  avatar.src = 'camilo.jpg'; // local preferred; GitHub Pages: put camilo.jpg in same repo
+  // --- Avatar handling ---
+  const avatar = new Image();
+  let avatarLoaded = false, avatarBroken = false;
+  const remoteFallback = 'https://media.licdn.com/dms/image/v2/D4E35AQHlZPQIenYnZA/profile-framedphoto-shrink_400_400/0/1699487313381';
+  let triedFallback = false;
+  avatar.onload = ()=> { avatarLoaded = true; };
+  avatar.onerror = ()=>{ if(!triedFallback){ triedFallback = true; avatar.src = remoteFallback; } else { avatarBroken = true; } };
 
-  // --- Particles background ---
-  const particles = [];
-  const PCOUNT = 120;
-  function initParticles(){
-    particles.length = 0;
-    const W = canvas.clientWidth || window.innerWidth;
-    const H = canvas.clientHeight || window.innerHeight;
-    for(let i=0;i<PCOUNT;i++){ particles.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.6+0.2, vx:(Math.random()-0.5)*0.3, vy:(Math.random()-0.5)*0.3, alpha:0.1+Math.random()*0.6}); }
-  }
-  initParticles();
+  // ✅ CÓDIGO ACTUALIZADO CON TU URL DE GITHUB
+  avatar.src = 'https://raw.githubusercontent.com/CAMILOSANCHEZDEVELOPER/GAME-JAMES-BOND-EN-EL-ESPACIO/main/camilo.png';
 
-  // --- Game objects ---
-  const player = { x: 120, y: 260, w: 34, h: 22, speed: 320, cooldown:0 };
-  const bullets = [];
-  const enemies = [];
-  let score = 0, lives = 3;
-  let enemyTimer = 0, enemyInterval = 900;
+  // --- Particles background ---
+  const particles = [];
+  const PCOUNT = 120;
+  function initParticles(){
+    particles.length = 0;
+    const W = canvas.clientWidth || window.innerWidth;
+    const H = canvas.clientHeight || window.innerHeight;
+    for(let i=0;i<PCOUNT;i++){ particles.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.6+0.2, vx:(Math.random()-0.5)*0.3, vy:(Math.random()-0.5)*0.3, alpha:0.1+Math.random()*0.6}); }
+  }
+  initParticles();
 
-  // --- UI buttons rectangles (in CSS pixels) ---
-  let uiButtons = []; // each {rect:{x,y,w,h}, action:fn, label}
+  // --- Game objects ---
+  const player = { x: 120, y: 260, w: 34, h: 22, speed: 320, cooldown:0 };
+  const bullets = [];
+  const enemies = [];
+  let score = 0, lives = 3;
+  let enemyTimer = 0, enemyInterval = 900;
 
-  // --- Utilities ---
-  const rnd = (a,b)=> Math.random()*(b-a)+a;
-  function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
-  function rectsCollide(a,b){ return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y }
+  // --- UI buttons rectangles (in CSS pixels) ---
+  let uiButtons = []; // each {rect:{x,y,w,h}, action:fn, label}
 
-  // --- Drawing helpers ---
-  function neonText(txt,x,y,size,glow1,glow2,align='center'){
-    ctx.save(); ctx.font = `700 ${size}px Orbitron, sans-serif`; ctx.textAlign = align;
-    ctx.fillStyle = glow2; ctx.shadowColor = glow1; ctx.shadowBlur = 20; ctx.fillText(txt,x,y);
-    ctx.shadowBlur = 0; ctx.fillStyle = '#eef'; ctx.fillText(txt,x,y - Math.max(2,size*0.03)); ctx.restore();
-  }
-  function drawRounded(x,y,w,h,r,fill,stroke){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); if(fill){ ctx.fillStyle=fill; ctx.fill(); } if(stroke){ ctx.lineWidth=2; ctx.strokeStyle=stroke; ctx.stroke(); } }
-  function drawButton(x,y,w,h,label,fill,stroke,txtColor='#000'){ drawRounded(x,y,w,h,8,fill,stroke); ctx.fillStyle = txtColor; ctx.font='18px Orbitron'; ctx.textAlign='center'; ctx.fillText(label, x+w/2, y+h/2+6); }
+  // --- Utilities ---
+  const rnd = (a,b)=> Math.random()*(b-a)+a;
+  function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+  function rectsCollide(a,b){ return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y }
 
-  // --- Particles update/draw ---
-  function updateParticles(dt){ const W = canvas.clientWidth || window.innerWidth, H = canvas.clientHeight || window.innerHeight; for(const p of particles){ p.x += p.vx * dt/16; p.y += p.vy * dt/16; if(p.x < -10) p.x = W+10; if(p.x > W+10) p.x = -10; if(p.y < -10) p.y = H+10; if(p.y > H+10) p.y = -10; } }
-  function drawParticles(){ ctx.save(); for(const p of particles){ ctx.globalAlpha = p.alpha; ctx.fillStyle = '#88f7ff'; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill(); } ctx.globalAlpha = 1; ctx.restore(); }
+  // --- Drawing helpers ---
+  function neonText(txt,x,y,size,glow1,glow2,align='center'){
+    ctx.save(); ctx.font = `700 ${size}px Orbitron, sans-serif`; ctx.textAlign = align;
+    ctx.fillStyle = glow2; ctx.shadowColor = glow1; ctx.shadowBlur = 20; ctx.fillText(txt,x,y);
+    ctx.shadowBlur = 0; ctx.fillStyle = '#eef'; ctx.fillText(txt,x,y - Math.max(2,size*0.03)); ctx.restore();
+  }
+  function drawRounded(x,y,w,h,r,fill,stroke){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); if(fill){ ctx.fillStyle=fill; ctx.fill(); } if(stroke){ ctx.lineWidth=2; ctx.strokeStyle=stroke; ctx.stroke(); } }
+  function drawButton(x,y,w,h,label,fill,stroke,txtColor='#000'){ drawRounded(x,y,w,h,8,fill,stroke); ctx.fillStyle = txtColor; ctx.font='18px Orbitron'; ctx.textAlign='center'; ctx.fillText(label, x+w/2, y+h/2+6); }
 
-  // --- Enemy shapes (asteroid polygon) ---
-  function drawAsteroid(x,y,r,rotation,color){ ctx.save(); ctx.translate(x,y); ctx.rotate(rotation); ctx.beginPath(); const spikes = Math.max(5, Math.floor(r/8)); for(let i=0;i<spikes;i++){ const ang = (i/spikes)*Math.PI*2; const rad = r*(0.6 + 0.4*Math.sin(i*3 + rotation)); const px = Math.cos(ang)*rad; const py = Math.sin(ang)*rad; if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py); } ctx.closePath(); ctx.fillStyle=color; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.stroke(); ctx.restore(); }
+  // --- Particles update/draw ---
+  function updateParticles(dt){ const W = canvas.clientWidth || window.innerWidth, H = canvas.clientHeight || window.innerHeight; for(const p of particles){ p.x += p.vx * dt/16; p.y += p.vy * dt/16; if(p.x < -10) p.x = W+10; if(p.x > W+10) p.x = -10; if(p.y < -10) p.y = H+10; if(p.y > H+10) p.y = -10; } }
+  function drawParticles(){ ctx.save(); for(const p of particles){ ctx.globalAlpha = p.alpha; ctx.fillStyle = '#88f7ff'; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill(); } ctx.globalAlpha = 1; ctx.restore(); }
 
-  // enemy drone (triangle ship)
-  function drawDrone(x,y,w,h,rot,color){ ctx.save(); ctx.translate(x,y); ctx.rotate(rot); ctx.beginPath(); ctx.moveTo(-w/2,h/2); ctx.lineTo(w/2,0); ctx.lineTo(-w/2,-h/2); ctx.closePath(); ctx.fillStyle=color; ctx.fill(); ctx.lineWidth=1; ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.stroke(); ctx.restore(); }
+  // --- Enemy shapes (asteroid polygon) ---
+  function drawAsteroid(x,y,r,rotation,color){ ctx.save(); ctx.translate(x,y); ctx.rotate(rotation); ctx.beginPath(); const spikes = Math.max(5, Math.floor(r/8)); for(let i=0;i<spikes;i++){ const ang = (i/spikes)*Math.PI*2; const rad = r*(0.6 + 0.4*Math.sin(i*3 + rotation)); const px = Math.cos(ang)*rad; const py = Math.sin(ang)*rad; if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py); } ctx.closePath(); ctx.fillStyle=color; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.stroke(); ctx.restore(); }
 
-  // --- Spawning enemies ---
-  function spawnEnemy(){ const W = canvas.clientWidth||window.innerWidth, H = canvas.clientHeight||window.innerHeight; if(Math.random()<0.6){ // asteroid
-      const r = rnd(18,42); enemies.push({type:'asteroid', x:W+60, y:r + rnd(20,H-60-r), r:r, rot: rnd(0,Math.PI*2), rotSpeed: rnd(-0.02,0.02), vx: rnd(40,120)});
-    } else { // drone
-      enemies.push({type:'drone', x:W+60, y:rnd(50,(canvas.clientHeight||window.innerHeight)-80), w:40, h:30, rot:0, rotSpeed:0.02, vx: rnd(90,180)});
-    }
-  }
+  // enemy drone (triangle ship)
+  function drawDrone(x,y,w,h,rot,color){ ctx.save(); ctx.translate(x,y); ctx.rotate(rot); ctx.beginPath(); ctx.moveTo(-w/2,h/2); ctx.lineTo(w/2,0); ctx.lineTo(-w/2,-h/2); ctx.closePath(); ctx.fillStyle=color; ctx.fill(); ctx.lineWidth=1; ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.stroke(); ctx.restore(); }
 
-  // --- Menu rendering (box in center with avatar+info+buttons inside canvas) ---
-  function drawMenu(){
-    const W = canvas.clientWidth||window.innerWidth, H = canvas.clientHeight||window.innerHeight;
-    // background
-    ctx.fillStyle = 'rgba(0,0,8,0.6)'; ctx.fillRect(0,0,W,H);
-    updateParticles(16); drawParticles();
+  // --- Spawning enemies ---
+  function spawnEnemy(){ const W = canvas.clientWidth||window.innerWidth, H = canvas.clientHeight||window.innerHeight; if(Math.random()<0.6){ // asteroid
+      const r = rnd(18,42); enemies.push({type:'asteroid', x:W+60, y:r + rnd(20,H-60-r), r:r, rot: rnd(0,Math.PI*2), rotSpeed: rnd(-0.02,0.02), vx: rnd(40,120)});
+    } else { // drone
+      enemies.push({type:'drone', x:W+60, y:rnd(50,(canvas.clientHeight||window.innerHeight)-80), w:40, h:30, rot:0, rotSpeed:0.02, vx: rnd(90,180)});
+    }
+  }
 
-    // Title
-    neonText('James Bond en el Espacio', W/2, 90, 44, 'var(--neon2)', 'var(--neon1)');
+  // --- Menu rendering (box in center with avatar+info+buttons inside canvas) ---
+  function drawMenu(){
+    const W = canvas.clientWidth||window.innerWidth, H = canvas.clientHeight||window.innerHeight;
+    // background
+    ctx.fillStyle = 'rgba(0,0,8,0.6)'; ctx.fillRect(0,0,W,H);
+    updateParticles(16); drawParticles();
 
-    // central box
-    const boxW = Math.min(760, W-120), boxH = 260; const bx = W/2 - boxW/2, by = 140;
-    drawRounded(bx,by,boxW,boxH,14,'rgba(1,3,6,0.6)','rgba(0,255,246,0.18)');
-    // inner glow
-    ctx.save(); ctx.strokeStyle='rgba(0,255,246,0.35)'; ctx.lineWidth=2; ctx.shadowBlur=30; ctx.shadowColor='rgba(0,255,246,0.15)'; ctx.strokeRect(bx+1,by+1,boxW-2,boxH-2); ctx.restore();
+    // Title
+    neonText('James Bond en el Espacio', W/2, 90, 44, 'var(--neon2)', 'var(--neon1)');
 
-    // avatar circle
-    const avSize = 140; const avX = bx + 36, avY = by +  (boxH - avSize)/2;
-    ctx.save(); ctx.beginPath(); ctx.arc(avX + avSize/2, avY + avSize/2, avSize/2, 0, Math.PI*2); ctx.closePath(); ctx.clip();
-    if(avatarLoaded && !avatarBroken){ try{ ctx.drawImage(avatar, avX, avY, avSize, avSize); } catch(e){ /* ignore */ } }
-    else if(avatarBroken){ ctx.fillStyle='#0b0b0f'; ctx.fillRect(avX,avY,avSize,avSize); ctx.restore(); ctx.fillStyle='#e6f7ff'; ctx.font='28px Orbitron'; ctx.textAlign='center'; ctx.fillText('CS', avX + avSize/2, avY + avSize/2 + 10); }
-    else { ctx.fillStyle='#081024'; ctx.fillRect(avX,avY,avSize,avSize); ctx.restore(); ctx.fillStyle='#7fd3ff'; ctx.font='14px Orbitron'; ctx.textAlign='center'; ctx.fillText('Cargando foto...', avX + avSize/2, avY + avSize/2 + 6); }
-    ctx.restore();
+    // central box
+    const boxW = Math.min(760, W-120), boxH = 260; const bx = W/2 - boxW/2, by = 140;
+    drawRounded(bx,by,boxW,boxH,14,'rgba(1,3,6,0.6)','rgba(0,255,246,0.18)');
+    // inner glow
+    ctx.save(); ctx.strokeStyle='rgba(0,255,246,0.35)'; ctx.lineWidth=2; ctx.shadowBlur=30; ctx.shadowColor='rgba(0,255,246,0.15)'; ctx.strokeRect(bx+1,by+1,boxW-2,boxH-2); ctx.restore();
 
-    // info text inside box
-    ctx.fillStyle='#cfefff'; ctx.textAlign='left'; ctx.font='20px Orbitron'; ctx.fillText('Camilo Sánchez', avX + avSize + 24, by + 58);
-    ctx.font='16px Orbitron'; ctx.fillStyle='#bfe7ff'; ctx.fillText('Celular: +57 320 941 5494', avX + avSize + 24, by + 100);
-    ctx.fillText('Email: camilosanchezme@gmail.com', avX + avSize + 24, by + 132);
+    // avatar circle
+    const avSize = 140; const avX = bx + 36, avY = by +  (boxH - avSize)/2;
+    ctx.save(); ctx.beginPath(); ctx.arc(avX + avSize/2, avY + avSize/2, avSize/2, 0, Math.PI*2); ctx.closePath(); ctx.clip();
+    if(avatarLoaded && !avatarBroken){ try{ ctx.drawImage(avatar, avX, avY, avSize, avSize); } catch(e){ /* ignore */ } }
+    else if(avatarBroken){ ctx.fillStyle='#0b0b0f'; ctx.fillRect(avX,avY,avSize,avSize); ctx.restore(); ctx.fillStyle='#e6f7ff'; ctx.font='28px Orbitron'; ctx.textAlign='center'; ctx.fillText('CS', avX + avSize/2, avY + avSize/2 + 10); }
+    else { ctx.fillStyle='#081024'; ctx.fillRect(avX,avY,avSize,avSize); ctx.restore(); ctx.fillStyle='#7fd3ff'; ctx.font='14px Orbitron'; ctx.textAlign='center'; ctx.fillText('Cargando foto...', avX + avSize/2, avY + avSize/2 + 6); }
+    ctx.restore();
 
-    // buttons (draw inside box, centered under info)
-    const btnW = 140, btnH = 40; const gap = 18; const totalW = btnW*3 + gap*2; const startX = bx + (boxW - totalW)/2; const byBtns = by + boxH - 70;
-    uiButtons = [];
-    // Email
-    uiButtons.push({rect:{x:startX,y:byBtns,w:btnW,h:btnH}, action:()=> window.location.href='mailto:camilosanchezme@gmail.com', label:'Email'});
-    // WhatsApp
-    uiButtons.push({rect:{x:startX+btnW+gap,y:byBtns,w:btnW,h:btnH}, action:()=> window.open('https://wa.me/573209415494','_blank'), label:'WhatsApp'});
-    // LinkedIn
-    uiButtons.push({rect:{x:startX+ (btnW+gap)*2 ,y:byBtns,w:btnW,h:btnH}, action:()=> window.open('https://www.linkedin.com/in/camilo-serrano-sanchez-/','_blank'), label:'LinkedIn'});
+    // info text inside box
+    ctx.fillStyle='#cfefff'; ctx.textAlign='left'; ctx.font='20px Orbitron'; ctx.fillText('Camilo Sánchez', avX + avSize + 24, by + 58);
+    ctx.font='16px Orbitron'; ctx.fillStyle='#bfe7ff'; ctx.fillText('Celular: +57 320 941 5494', avX + avSize + 24, by + 100);
+    ctx.fillText('Email: camilosanchezme@gmail.com', avX + avSize + 24, by + 132);
 
-    // draw each button with neon outline
-    for(const b of uiButtons){ drawButton(b.rect.x,b.rect.y,b.rect.w,b.rect.h,b.label,'#00fff620','#00fff6','#000'); }
+    // buttons (draw inside box, centered under info)
+    const btnW = 140, btnH = 40; const gap = 18; const totalW = btnW*3 + gap*2; const startX = bx + (boxW - totalW)/2; const byBtns = by + boxH - 70;
+    uiButtons = [];
+    // Email
+    uiButtons.push({rect:{x:startX,y:byBtns,w:btnW,h:btnH}, action:()=> window.location.href='mailto:camilosanchezme@gmail.com', label:'Email'});
+    // WhatsApp
+    uiButtons.push({rect:{x:startX+btnW+gap,y:byBtns,w:btnW,h:btnH}, action:()=> window.open('https://wa.me/573209415494','_blank'), label:'WhatsApp'});
+    // LinkedIn
+    uiButtons.push({rect:{x:startX+ (btnW+gap)*2 ,y:byBtns,w:btnW,h:btnH}, action:()=> window.open('https://www.linkedin.com/in/camilo-serrano-sanchez-/','_blank'), label:'LinkedIn'});
 
-    // bottom message
-    ctx.textAlign='center'; ctx.font='15px Orbitron'; ctx.fillStyle='#dffaff'; ctx.fillText('Desarrollado para la comunidad — guía y aporte de valor', W/2, by + boxH + 34);
+    // draw each button with neon outline
+    for(const b of uiButtons){ drawButton(b.rect.x,b.rect.y,b.rect.w,b.rect.h,b.label,'#00fff620','#00fff6','#000'); }
 
-    // outside box: Iniciar Juego and Manual bigger buttons
-    const bigW = 220, bigH = 56; const bx2 = W/2 - bigW - 12, bx3 = W/2 + 12; const byBig = by + boxH + 60;
-    uiButtons.push({rect:{x:bx2,y:byBig,w:bigW,h:bigH}, action:()=> startGame(), label:'Iniciar Juego'});
-    uiButtons.push({rect:{x:bx3,y:byBig,w:bigW,h:bigH}, action:()=> { state='manual'; } , label:'Manual'});
-    drawButton(bx2,byBig,bigW,bigH,'Iniciar Juego','#ff00b8','#00fff6','#fff');
-    drawButton(bx3,byBig,bigW,bigH,'Manual','#00fff6','#ff00b8','#000');
+    // bottom message
+    ctx.textAlign='center'; ctx.font='15px Orbitron'; ctx.fillStyle='#dffaff'; ctx.fillText('Desarrollado para la comunidad — guía y aporte de valor', W/2, by + boxH + 34);
 
-    // footer small credit under everything
-    ctx.font='13px Orbitron'; ctx.fillStyle='#9fb7ff'; ctx.fillText('© Todos los derechos reservados — Ingeniero Camilo Andrés Serrano Sánchez', W/2, H - 28);
-  }
+    // outside box: Iniciar Juego and Manual bigger buttons
+    const bigW = 220, bigH = 56; const bx2 = W/2 - bigW - 12, bx3 = W/2 + 12; const byBig = by + boxH + 60;
+    uiButtons.push({rect:{x:bx2,y:byBig,w:bigW,h:bigH}, action:()=> startGame(), label:'Iniciar Juego'});
+    uiButtons.push({rect:{x:bx3,y:byBig,w:bigW,h:bigH}, action:()=> { state='manual'; } , label:'Manual'});
+    drawButton(bx2,byBig,bigW,bigH,'Iniciar Juego','#ff00b8','#00fff6','#fff');
+    drawButton(bx3,byBig,bigW,bigH,'Manual','#00fff6','#ff00b8','#000');
 
-  // --- Manual overlay (drawn in canvas) ---
-  function drawManual(){
-    const W = canvas.clientWidth||window.innerWidth, H = canvas.clientHeight||window.innerHeight;
-    // dim backdrop
-    ctx.fillStyle='rgba(0,0,8,0.75)'; ctx.fillRect(0,0,W,H);
-    const boxW = Math.min(720, W-80), boxH = Math.min(420, H-160); const bx = W/2 - boxW/2, by = H/2 - boxH/2;
-    drawRounded(bx,by,boxW,boxH,12,'rgba(2,6,12,0.85)','rgba(0,255,246,0.12)');
-    neonText('Manual del Juego', bx + 24, by + 46, 28, 'var(--neon1)','var(--neon2)','left');
-    ctx.fillStyle='#cfefff'; ctx.textAlign='left'; ctx.font='16px Arial';
-    const lines = [
-      'Controles: Flechas / WASD para mover la nave (James Bond).',
-      'Espacio: Disparar proyectiles. (cooldown automático).',
-      'Objetivo: Eliminar asteroides y drones enemigos para ganar puntos.',
-      'Evita colisionar con enemigos — pierdes vidas. El juego termina al quedarte sin vidas.',
-      'Regresa al menú con el botón "Volver al Menú" dentro del juego.'
-    ];
-    lines.forEach((l,i)=> ctx.fillText(l, bx + 28, by + 90 + i*28));
-    // back button
-    uiButtons = [{rect:{x:bx + boxW - 160, y: by + boxH - 56, w:140, h:40}, action:()=> { state='menu'; }}];
-    drawButton(bx + boxW - 160, by + boxH - 56, 140, 40, 'Volver al Menú','#ff00b8','#00fff6','#fff');
-  }
+    // footer small credit under everything
+    ctx.font='13px Orbitron'; ctx.fillStyle='#9fb7ff'; ctx.fillText('© Todos los derechos reservados — Ingeniero Camilo Andrés Serrano Sánchez', W/2, H - 28);
+  }
 
-  // --- Game draw/update ---
-  function drawGame(dt){
-    const W = canvas.clientWidth||window.innerWidth, H = canvas.clientHeight||window.innerHeight;
-    // starry/particle background
-    ctx.fillStyle='#000016'; ctx.fillRect(0,0,W,H); updateParticles(dt); drawParticles();
+  // --- Manual overlay (drawn in canvas) ---
+  function drawManual(){
+    const W = canvas.clientWidth||window.innerWidth, H = canvas.clientHeight||window.innerHeight;
+    // dim backdrop
+    ctx.fillStyle='rgba(0,0,8,0.75)'; ctx.fillRect(0,0,W,H);
+    const boxW = Math.min(720, W-80), boxH = Math.min(420, H-160); const bx = W/2 - boxW/2, by = H/2 - boxH/2;
+    drawRounded(bx,by,boxW,boxH,12,'rgba(2,6,12,0.85)','rgba(0,255,246,0.12)');
+    neonText('Manual del Juego', bx + 24, by + 46, 28, 'var(--neon1)','var(--neon2)','left');
+    ctx.fillStyle='#cfefff'; ctx.textAlign='left'; ctx.font='16px Arial';
+    const lines = [
+      'Controles: Flechas / WASD para mover la nave (James Bond).',
+      'Espacio: Disparar proyectiles. (cooldown automático).',
+      'Objetivo: Eliminar asteroides y drones enemigos para ganar puntos.',
+      'Evita colisionar con enemigos — pierdes vidas. El juego termina al quedarte sin vidas.',
+      'Regresa al menú con el botón "Volver al Menú" dentro del juego.'
+    ];
+    lines.forEach((l,i)=> ctx.fillText(l, bx + 28, by + 90 + i*28));
+    // back button
+    uiButtons = [{rect:{x:bx + boxW - 160, y: by + boxH - 56, w:140, h:40}, action:()=> { state='menu'; }}];
+    drawButton(bx + boxW - 160, by + boxH - 56, 140, 40, 'Volver al Menú','#ff00b8','#00fff6','#fff');
+  }
 
-    // subtle moving grid lines
-    ctx.save(); ctx.globalAlpha = 0.06; ctx.strokeStyle='#ff00b8'; for(let i=0;i<18;i++){ ctx.beginPath(); ctx.moveTo(i*(W/18),0); ctx.lineTo(i*(W/18),H); ctx.stroke(); } ctx.restore();
+  // --- Game draw/update ---
+  function drawGame(dt){
+    const W = canvas.clientWidth||window.innerWidth, H = canvas.clientHeight||window.innerHeight;
+    // starry/particle background
+    ctx.fillStyle='#000016'; ctx.fillRect(0,0,W,H); updateParticles(dt); drawParticles();
 
-    // draw player ship (sleek triangle)
-    ctx.save(); ctx.translate(player.x, player.y); ctx.fillStyle='#9bdcff'; ctx.shadowBlur=14; ctx.shadowColor='#00fff6'; ctx.beginPath(); ctx.moveTo(0, -14); ctx.lineTo(28,0); ctx.lineTo(0,14); ctx.closePath(); ctx.fill(); ctx.restore();
+    // subtle moving grid lines
+    ctx.save(); ctx.globalAlpha = 0.06; ctx.strokeStyle='#ff00b8'; for(let i=0;i<18;i++){ ctx.beginPath(); ctx.moveTo(i*(W/18),0); ctx.lineTo(i*(W/18),H); ctx.stroke(); } ctx.restore();
 
-    // bullets
-    ctx.fillStyle='#fff1b8'; for(const b of bullets){ ctx.fillRect(b.x,b.y,b.w,b.h); }
+    // draw player ship (sleek triangle)
+    ctx.save(); ctx.translate(player.x, player.y); ctx.fillStyle='#9bdcff'; ctx.shadowBlur=14; ctx.shadowColor='#00fff6'; ctx.beginPath(); ctx.moveTo(0, -14); ctx.lineTo(28,0); ctx.lineTo(0,14); ctx.closePath(); ctx.fill(); ctx.restore();
 
-    // enemies
-    for(const e of enemies){ if(e.type==='asteroid'){ e.rot += e.rotSpeed * dt/16; drawAsteroid(e.x,e.y,e.r,e.rot,'#ff7aa3'); }
-      else if(e.type==='drone'){ e.rot += e.rotSpeed * dt/16; drawDrone(e.x,e.y,e.w,e.h,e.rot,'#ffcc66'); }
-    }
+    // bullets
+    ctx.fillStyle='#fff1b8'; for(const b of bullets){ ctx.fillRect(b.x,b.y,b.w,b.h); }
 
-    // HUD
-    ctx.font='18px Orbitron'; ctx.fillStyle='#9ff'; ctx.textAlign='left'; ctx.fillText('Puntuación: '+score, 20, 34); ctx.fillText('Vidas: '+lives, 20, 58);
+    // enemies
+    for(const e of enemies){ if(e.type==='asteroid'){ e.rot += e.rotSpeed * dt/16; drawAsteroid(e.x,e.y,e.r,e.rot,'#ff7aa3'); }
+      else if(e.type==='drone'){ e.rot += e.rotSpeed * dt/16; drawDrone(e.x,e.y,e.w,e.h,e.rot,'#ffcc66'); }
+    }
 
-    // Volver al menú button (top-left)
-    uiButtons = [{rect:{x:20,y:20,w:160,h:40}, action:()=> { state='menu'; clearEnemies(); } }];
-    drawButton(20,20,160,40,'Volver al Menú','#ff00b8','#00fff6','#fff');
-  }
+    // HUD
+    ctx.font='18px Orbitron'; ctx.fillStyle='#9ff'; ctx.textAlign='left'; ctx.fillText('Puntuación: '+score, 20, 34); ctx.fillText('Vidas: '+lives, 20, 58);
 
-  function updateGame(dt){
-    // spawn enemies
-    enemyTimer += dt;
-    if(enemyTimer > enemyInterval){ enemyTimer = 0; spawnEnemy(); }
-    // bullets update
-    for(let i=bullets.length-1;i>=0;i--){ bullets[i].x += bullets[i].vx * dt/16; if(bullets[i].x > canvas.clientWidth + 40) bullets.splice(i,1); }
-    // enemies update
-    for(let i=enemies.length-1;i>=0;i--){ const e = enemies[i]; e.x -= e.vx * dt/1000*60/1.0; if(e.x + (e.r||e.w) < -60) enemies.splice(i,1); }
-    // collisions
-    for(let i=enemies.length-1;i>=0;i--){ const e=enemies[i]; // enemy vs player bounding circle
-      const ex = e.x, ey = e.y; const pr = Math.max(player.w, player.h)/2; const dx = ex - (player.x + 14), dy = ey - player.y; if(Math.hypot(dx,dy) < ( (e.r || Math.max(e.w,e.h)/2) + pr) ){ enemies.splice(i,1); lives--; if(lives<=0){ state='gameover'; } continue; }
-      // bullets vs enemy
-      for(let j=bullets.length-1;j>=0;j--){ const b = bullets[j]; if(b.x < e.x + (e.r||e.w) && b.x + b.w > e.x - (e.r||e.w) && b.y < e.y + (e.r||e.h) && b.y + b.h > e.y - (e.r||e.h)){ enemies.splice(i,1); bullets.splice(j,1); score += 10; break; } }
-    }
-    // keep player inside
-    const H = canvas.clientHeight; player.y = clamp(player.y, 28, H - 28);
-  }
+    // Volver al menú button (top-left)
+    uiButtons = [{rect:{x:20,y:20,w:160,h:40}, action:()=> { state='menu'; clearEnemies(); } }];
+    drawButton(20,20,160,40,'Volver al Menú','#ff00b8','#00fff6','#fff');
+  }
 
-  function clearEnemies(){ enemies.length = 0; bullets.length = 0; score = 0; lives = 3; }
+  function updateGame(dt){
+    // spawn enemies
+    enemyTimer += dt;
+    if(enemyTimer > enemyInterval){ enemyTimer = 0; spawnEnemy(); }
+    // bullets update
+    for(let i=bullets.length-1;i>=0;i--){ bullets[i].x += bullets[i].vx * dt/16; if(bullets[i].x > canvas.clientWidth + 40) bullets.splice(i,1); }
+    // enemies update
+    for(let i=enemies.length-1;i>=0;i--){ const e = enemies[i]; e.x -= e.vx * dt/1000*60/1.0; if(e.x + (e.r||e.w) < -60) enemies.splice(i,1); }
+    // collisions
+    for(let i=enemies.length-1;i>=0;i--){ const e=enemies[i]; // enemy vs player bounding circle
+      const ex = e.x, ey = e.y; const pr = Math.max(player.w, player.h)/2; const dx = ex - (player.x + 14), dy = ey - player.y; if(Math.hypot(dx,dy) < ( (e.r || Math.max(e.w,e.h)/2) + pr) ){ enemies.splice(i,1); lives--; if(lives<=0){ state='gameover'; } continue; }
+      // bullets vs enemy
+      for(let j=bullets.length-1;j>=0;j--){ const b = bullets[j]; if(b.x < e.x + (e.r||e.w) && b.x + b.w > e.x - (e.r||e.w) && b.y < e.y + (e.r||e.h) && b.y + b.h > e.y - (e.r||e.h)){ enemies.splice(i,1); bullets.splice(j,1); score += 10; break; } }
+    }
+    // keep player inside
+    const H = canvas.clientHeight; player.y = clamp(player.y, 28, H - 28);
+  }
 
-  // --- Game Over screen ---
-  function drawGameOver(){ const W = canvas.clientWidth,H = canvas.clientHeight; ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(0,0,W,H); neonText('GAME OVER', W/2, H/2 - 30, 56, 'var(--neon2)','var(--neon1)'); ctx.fillStyle='#dfefff'; ctx.textAlign='center'; ctx.font='20px Orbitron'; ctx.fillText('Puntuación final: '+score, W/2, H/2 + 8); uiButtons = [{rect:{x:W/2 - 120,y:H/2 + 36,w:240,h:44}, action:()=> { state='menu'; clearEnemies(); }}]; drawButton(W/2 - 120, H/2 + 36, 240,44,'Volver al Menú','#ff00b8','#00fff6','#fff'); }
+  function clearEnemies(){ enemies.length = 0; bullets.length = 0; score = 0; lives = 3; }
 
-  // --- Input ---
-  const keys = {};
-  window.addEventListener('keydown',(e)=>{ keys[e.key.toLowerCase()] = true; if(state==='game' && (e.key === ' ' || e.code === 'Space')){ const now = Date.now(); if(player.cooldown==null) player.cooldown = 0; if(now - (player.lastShotTime||0) > 160){ bullets.push({x: player.x + 18, y: player.y - 4, w:8, h:6, vx: 540/60}); player.lastShotTime = now; } } });
-  window.addEventListener('keyup',(e)=>{ keys[e.key.toLowerCase()] = false; });
+  // --- Game Over screen ---
+  function drawGameOver(){ const W = canvas.clientWidth,H = canvas.clientHeight; ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(0,0,W,H); neonText('GAME OVER', W/2, H/2 - 30, 56, 'var(--neon2)','var(--neon1)'); ctx.fillStyle='#dfefff'; ctx.textAlign='center'; ctx.font='20px Orbitron'; ctx.fillText('Puntuación final: '+score, W/2, H/2 + 8); uiButtons = [{rect:{x:W/2 - 120,y:H/2 + 36,w:240,h:44}, action:()=> { state='menu'; clearEnemies(); }}]; drawButton(W/2 - 120, H/2 + 36, 240,44,'Volver al Menú','#ff00b8','#00fff6','#fff'); }
 
-  // --- Mouse / touch handling for buttons ---
-  canvas.addEventListener('pointerdown',(ev)=>{
-    const rect = canvas.getBoundingClientRect(); const x = ev.clientX - rect.left; const y = ev.clientY - rect.top;
-    for(const b of uiButtons){ const r=b.rect; if(x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h){ b.action(); return; } }
-    // if click avatar in menu -> open linkedin
-    if(state==='menu'){
-      const W = canvas.clientWidth||window.innerWidth; const boxW = Math.min(760, W-120); const bx = W/2 - boxW/2, by = 140; const avSize=140; const avX = bx + 36, avY = by + (boxW?((260-avSize)/2):0);
-      if(x >= avX && x <= avX + avSize && y >= avY && y <= avY + avSize) window.open('https://www.linkedin.com/in/camilo-serrano-sanchez-/','_blank');
-    }
-  });
+  // --- Input ---
+  const keys = {};
+  window.addEventListener('keydown',(e)=>{ keys[e.key.toLowerCase()] = true; if(state==='game' && (e.key === ' ' || e.code === 'Space')){ const now = Date.now(); if(player.cooldown==null) player.cooldown = 0; if(now - (player.lastShotTime||0) > 160){ bullets.push({x: player.x + 18, y: player.y - 4, w:8, h:6, vx: 540/60}); player.lastShotTime = now; } } });
+  window.addEventListener('keyup',(e)=>{ keys[e.key.toLowerCase()] = false; });
 
-  // --- Spawn logic ---
-  function spawnEnemy(){ const W = canvas.clientWidth||window.innerWidth; const H = canvas.clientHeight||window.innerHeight; if(Math.random() < 0.65){ const r = rnd(16,46); enemies.push({type:'asteroid', x:W + r + 20, y: rnd(60,H-60), r:r, rot: rnd(0,Math.PI*2), rotSpeed: rnd(-0.03,0.03), vx: rnd(40,150)}); } else { enemies.push({type:'drone', x:W + 40, y: rnd(80,(canvas.clientHeight||window.innerHeight)-80), w:36, h:26, rot:0, rotSpeed:0.05, vx: rnd(80,220)}); } }
+  // --- Mouse / touch handling for buttons ---
+  canvas.addEventListener('pointerdown',(ev)=>{
+    const rect = canvas.getBoundingClientRect(); const x = ev.clientX - rect.left; const y = ev.clientY - rect.top;
+    for(const b of uiButtons){ const r=b.rect; if(x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h){ b.action(); return; } }
+    // if click avatar in menu -> open linkedin
+    if(state==='menu'){
+      const W = canvas.clientWidth||window.innerWidth; const boxW = Math.min(760, W-120); const bx = W/2 - boxW/2, by = 140; const avSize=140; const avX = bx + 36, avY = by + (boxW?((260-avSize)/2):0);
+      if(x >= avX && x <= avX + avSize && y >= avY && y <= avY + avSize) window.open('https://www.linkedin.com/in/camilo-serrano-sanchez-/','_blank');
+    }
+  });
 
-  // --- Main loop ---
-  function loop(ts){
-    const dt = Math.min(40, ts - lastTime || 16); lastTime = ts;
-    // update/draw based on state
-    if(state==='menu'){ updateParticles(dt); drawMenu(); }
-    else if(state==='manual'){ drawManual(); }
-    else if(state==='game'){ // update
-      // handle movement
-      if(keys['arrowup']||keys['w']) player.y -= player.speed * dt/1000;
-      if(keys['arrowdown']||keys['s']) player.y += player.speed * dt/1000;
-      if(keys['arrowleft']||keys['a']) player.x -= player.speed * dt/1000;
-      if(keys['arrowright']||keys['d']) player.x += player.speed * dt/1000;
-      // clamp horizontally & vertically
-      const W = canvas.clientWidth||window.innerWidth, H = canvas.clientHeight||window.innerHeight; player.x = clamp(player.x, 20, W - 120); player.y = clamp(player.y, 28, H - 28);
-      updateGame(dt); drawGame(dt);
-    }
-    else if(state==='gameover') drawGameOver();
-    requestAnimationFrame(loop);
-  }
-  requestAnimationFrame(loop);
+  // --- Spawn logic ---
+  function spawnEnemy(){ const W = canvas.clientWidth||window.innerWidth; const H = canvas.clientHeight||window.innerHeight; if(Math.random() < 0.65){ const r = rnd(16,46); enemies.push({type:'asteroid', x:W + r + 20, y: rnd(60,H-60), r:r, rot: rnd(0,Math.PI*2), rotSpeed: rnd(-0.03,0.03), vx: rnd(40,150)}); } else { enemies.push({type:'drone', x:W + 40, y: rnd(80,(canvas.clientHeight||window.innerHeight)-80), w:36, h:26, rot:0, rotSpeed:0.05, vx: rnd(80,220)}); } }
 
-  // expose small controls
-  window.__startGame = ()=> startGame();
+  // --- Main loop ---
+  function loop(ts){
+    const dt = Math.min(40, ts - lastTime || 16); lastTime = ts;
+    // update/draw based on state
+    if(state==='menu'){ updateParticles(dt); drawMenu(); }
+    else if(state==='manual'){ drawManual(); }
+    else if(state==='game'){ // update
+      // handle movement
+      if(keys['arrowup']||keys['w']) player.y -= player.speed * dt/1000;
+      if(keys['arrowdown']||keys['s']) player.y += player.speed * dt/1000;
+      if(keys['arrowleft']||keys['a']) player.x -= player.speed * dt/1000;
+      if(keys['arrowright']||keys['d']) player.x += player.speed * dt/1000;
+      // clamp horizontally & vertically
+      const W = canvas.clientWidth||window.innerWidth, H = canvas.clientHeight||window.innerHeight; player.x = clamp(player.x, 20, W - 120); player.y = clamp(player.y, 28, H - 28);
+      updateGame(dt); drawGame(dt);
+    }
+    else if(state==='gameover') drawGameOver();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
 
-  function startGame(){ state='game'; clearEnemies(); score=0; lives=3; enemyTimer=0; }
+  // expose small controls
+  window.__startGame = ()=> startGame();
 
-  // ensure particles adapt to resize
-  window.addEventListener('resize', ()=>{ initParticles(); });
+  function startGame(){ state='game'; clearEnemies(); score=0; lives=3; enemyTimer=0; }
+
+  // ensure particles adapt to resize
+  window.addEventListener('resize', ()=>{ initParticles(); });
 
 })();
 </script>
